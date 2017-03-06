@@ -1,0 +1,155 @@
+/* Rishabh Arora
+   IIIT-Hyderabad */
+
+#include <bits/stdc++.h>
+#include <limits.h>
+using namespace std;
+
+typedef pair<int,int> II;
+typedef vector<int> VI;
+typedef vector<II> VII;
+typedef long long int LL;
+typedef unsigned long long int ULL;
+typedef vector<VI> adjList;
+
+#define mod 1000000007
+#define rep(i, a, b) for(i = a; i < b; i++)
+#define rev(i, a, b) for(i = b; i > a; i--)
+#define REP(i, n) for(i = 1; i <= n; i++)
+#define pr0(arr, n) rep(i, 0, n) cout<<arr[i]<<" "; cout<<endl;
+#define pr1(arr, n) rep(i, 1, n+1) cout<<arr[i]<<" "; cout<<endl;
+#define INF INT_MAX
+#define gc getchar_unlocked
+#define PB push_back
+#define MP make_pair
+#define F first
+#define S second
+#define SET(a,b) memset(a, b, sizeof(a))
+#define gu getchar
+#define pu putchar
+#define SI(n) scanf("%d",&n)
+#define PI(n) printf("%d\n",n)
+#define SLL(n) scanf("%lld",&n)
+#define PLL(n) printf("%lld\n",n)
+
+#define TRACE
+
+#ifdef TRACE
+#define trace1(x)                cerr << #x << ": " << x << endl;
+#define trace2(x, y)             cerr << #x << ": " << x << " | " << #y << ": " << y << endl;
+#define trace3(x, y, z)          cerr << #x << ": " << x << " | " << #y << ": " << y << " | " << #z << ": " << z << endl;
+#define trace4(a, b, c, d)       cerr << #a << ": " << a << " | " << #b << ": " << b << " | " << #c << ": " << c << " | " << #d << ": " << d << endl;
+#define trace5(a, b, c, d, e)    cerr << #a << ": " << a << " | " << #b << ": " << b << " | " << #c << ": " << c << " | " << #d << ": " << d << " | " << #e << ": " << e << endl;
+#define trace6(a, b, c, d, e, f) cerr << #a << ": " << a << " | " << #b << ": " << b << " | " << #c << ": " << c << " | " << #d << ": " << d << " | " << #e << ": " << e << " | " << #f << ": " << f << endl;
+
+#else
+
+#define trace1(x)
+#define trace2(x, y)
+#define trace3(x, y, z)
+#define trace4(a, b, c, d)
+#define trace5(a, b, c, d, e)
+#define trace6(a, b, c, d, e, f)
+
+#endif
+
+bool compare(pair<II, int> A, pair<II, int> B) {
+  return (A.F.S < B.F.S);
+}
+
+int read_int() {
+  char c = gc();
+  while(c<'0' || c>'9') c = gc();
+  int ret = 0;
+  while(c>='0' && c<='9') {
+    ret = 10 * ret + c - 48;
+    c = gc();
+  }
+  return ret;
+}
+
+int a[300010], bit[300010];
+pair<II, int> Q[200010];
+map<int, int> m;
+int R[200010];
+int N, p = 0;
+
+void update(int idx, int val) {
+
+  while(idx <= N)  {
+    bit[idx] += val;
+    idx += idx & -idx;
+  }
+
+  return;
+}
+
+int sum(int idx) {
+  
+  int sum = 0;
+
+  while(idx > 0) {
+    sum += bit[idx];
+    idx -= idx & -idx;
+  }
+  
+  return sum;
+}
+
+int ans(int l, int r) {
+  return sum(r) - sum(l-1);
+}
+
+int main() {
+  
+  int i;
+  int q;
+  ios::sync_with_stdio(false);	
+  cin.tie(NULL);
+  
+  N = read_int();
+ 
+  int ind = -1;
+  
+  rep(i, 1, N+1) {
+    a[i] = read_int();
+    m[a[i]] = ind--;
+  }
+  
+  cin>>q;
+  
+  rep(i, 0, q) { 
+    Q[i].F.F = read_int();
+    Q[i].F.S = read_int();
+    Q[i].S = i;
+  }
+  
+  sort(Q, Q+q, compare);
+  
+  // rep(i, 0, q)
+  //   cout<<Q[i].F.F<<" "<<Q[i].F.S<<" "<<Q[i].S<<endl;
+
+  rep(i, 1, N+1) {
+    
+    if(m[a[i]] < 0) { 
+      m[a[i]] = i;
+      update(i, 1);
+    }
+    
+    else if(m[a[i]] > 0) {
+      update(m[a[i]], -1);
+      m[a[i]] = i;
+      update(i, 1);
+    }
+    
+    while(Q[p].F.S == i) { 
+      R[Q[p].S] = ans(Q[p].F.F, Q[p].F.S);
+      p++;
+    }
+  }
+  
+  rep(i, 0, q)
+    PI(R[i]);
+  
+  return 0;
+}

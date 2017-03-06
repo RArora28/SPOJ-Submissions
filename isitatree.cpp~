@@ -1,0 +1,52 @@
+#include<iostream>
+using namespace std;
+
+flag[10005], parent[10005];
+
+int main()
+{
+  int n, m;
+  cin>>n>>m;
+  vector<vector<int> >g(m);
+
+  for(int i = 0; i < m; i++)
+    {
+      cin>>u>>v;
+      g[u].push_back(v);
+      g[v].push_back(u);
+    }
+
+  
+  s.push(u);
+  flag[*it] = 1;
+  parent[*it] = 0;
+  
+  while(!s.empty())
+    {
+      temp = s.top();
+      s.pop();
+      
+      for(vector<int>::iterator it = g[temp].begin(); it != g[temp].end(); it++)
+	{
+	  if(flag[*it] == 0)
+	    {
+	      flag[*it] = 1;
+	      s.push(*it);
+	      parent[*it] = temp;
+	    }
+	  else if(flag[*it] == 1 && parent[*it] != temp && parent[*it] != 0)
+	    {
+	      temp_flag = 0;
+	      break;
+	    }
+	  
+	}
+      if(temp_flag == 0)
+	break;
+    }
+  if(temp_flag == 0)
+    cout<<"NO"<<endl;
+  else
+    cout<<"YES"<<endl;
+  return 0;
+}

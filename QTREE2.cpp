@@ -1,0 +1,293 @@
+/* Rishabh Arora
+   IIIT-Hyderabad */
+ 
+#include <bits/stdc++.h>
+using namespace std;
+ 
+typedef pair<long long int,long long int> II;
+typedef vector<long long int> VI;
+typedef vector<II> VII;
+typedef long long int LL;
+typedef unsigned long long int ULL;
+ 
+#define MAXSIZE 100005
+#define mod 1000000007
+#define rep(i, a, b) for(i = a; i < b; i++)
+#define rev(i, a, b) for(i = a; i > b; i--)
+#define INF INT_MAX
+#define PB push_back
+#define MP make_pair
+#define F first
+#define S second
+#define SET(a,b) memset(a, b, sizeof(a))
+ 
+//debugging statements
+// #define TRACE
+// #ifdef TRACE
+// #define trace(...) __f(#__VA_ARGS__, __VA_ARGS__)
+// template <typename Arg1>
+// void __f(const char* name, Arg1&& arg1){
+// 	cerr << name << " : " << arg1 << std::endl;
+// }
+// template <typename Arg1, typename... Args>
+// void __f(const char* names, Arg1&& arg1, Args&&... args){
+// 	const char* comma = strchr(names + 1, ',');cerr.write(names, comma - names) << " : " << arg1<<" | ";__f(comma+1, args...);
+// }
+// #else
+// #define trace(...)
+// #endif
+ 
+const long long int  N = 1e5+5;
+const long long int LOGN = 15;
+ 
+LL n;
+bool vis[N];
+map<II, LL> E;
+vector<VII> adj;
+LL edge_ind[N], edge_val[N], seg[4*N], basearr[N], T[N], L[N], special[N], P[N][LOGN], sub[N], position[N], head[N], chno[N];	    
+ 
+//SegTree ka bakchodi
+void make_seg(LL low, LL high, LL pos)
+{
+  if(low == high)
+    {
+      seg[pos] = (LL)basearr[low];
+      return;
+    }
+  LL mid = (low + high) >> 1;
+  make_seg(low, mid, 2*pos);
+  make_seg(mid+1, high, 2*pos+1);
+  seg[pos] = (LL)seg[2*pos] + (LL)seg[2*pos+1];
+  return;
+}
+
+//Range-max-query
+LL query_seg(LL low, LL high, LL pos, LL l, LL r)
+{
+  if(l > r)
+    return (LL)0;
+  else if(l <= low && r >= high)
+    return (LL)seg[pos];
+  else if( (r < low) || (l > high) )
+    return (LL)0;
+  LL mid = ( low + high) >> 1;
+  return (LL)query_seg(low, mid, 2*pos, l, r) + (LL)query_seg(mid + 1, high, 2*pos+1, l, r) ;
+}
+ 
+//find parent, subTree-size, level wrt to root and special child and array edge_val and edge_ind
+//edge_val stores the weight of the edge that will terminate on the (it.F)[The child]
+//edge_ind stores the node at which the ith edge is stored
+//The Map 'E' stores the pair of vertices corresponding to an edge
+//L[] - level of a vertex wrt. to '1'{the root I've decided}
+//T[] - the parent of a vertex, T[1] = -1{root};
+//sub[] - the subtree size of a vertex
+//special[] - stores the special child of a vertex (The one with the max subtree size in it's corresponding subtree)
+ 
+void dfs(LL v)
+{
+  LL size = 1, val = -1, ind = -1;
+  vis[v] = true;
+  for(VII::iterator it = adj[v].begin(); it != adj[v].end(); it++)
+    {
+      if(!vis[(*it).F])
+	{
+	  L[(*it).F] = L[v]+1;
+	  T[(*it).F] = v;
+	  dfs((*it).F);
+	  if( sub[(*it).F] > val)
+	    {
+	      val = sub[(*it).F];
+	      ind = (*it).F;
+	    }
+	  size += sub[(*it).F];
+	  edge_val[(*it).F] = (*it).S;   //edge_val saves the value of the edge that ends on it.F
+	  edge_ind[E[MP((*it).F, v)]] = (*it).F;   //stores the node at which the edge ends;
+	}
+    }
+  sub[v] = size;
+  special[v] = ind;
+  vis[v] = false;
+  return;
+}
+ 
+//Function for LCA
+void process(LL N) { 
+  LL i, j;
+  rep(i, 1, N+1)
+    P[i][0] = T[i];
+  for(j = 1; (1 << j) < N; j++) 
+    rep(i, 1, N+1)
+      if(P[i][j-1] != -1)
+	P[i][j] = P[P[i][j-1]][j-1];
+  return;
+}
+ 
+LL LCA(LL p, LL q) { 
+  LL i;
+  if(L[p] < L[q])
+    swap(p, q);
+  LL log;
+  for(log = 1; (1 << log) <= L[p]; log++);
+  log--;
+  rev(i, log, -1)
+    {
+      if(L[p] - (1 << i) >= L[q])
+	p = P[p][i];
+    }
+ if(p == q)
+   return p;
+ rev(i, log, -1) 
+   if(P[p][i] != -1 && P[p][i] != P[q][i])
+     p = P[p][i], q = P[q][i];
+ return T[p];
+}
+ 
+LL ANCESTOR(LL a, LL k, LL l)
+{
+  LL log, i;
+  for(log = 1; (1 << log) <= abs(L[a]); log++);
+  log--;
+  
+  rev(i, log, -1)
+    {
+      if (k == 0)
+	return a;
+      else if ( (1 << i) <= k && (k > 0) )
+	{
+	  k -= (1 << i);
+	  a = P[a][i];
+	}
+    }
+  return a;
+}
+ 
+//Heavy-Light Decomposition Part :)
+LL ch = 1, pos = 1;
+void HLD(LL curr)
+{
+  if(head[ch] == -1)
+    head[ch] = curr;   //storing the head of the chain 
+  vis[curr] = true;
+  chno[curr] = ch;     //storing the chain number of the current node 
+  basearr[pos] = (LL)edge_val[curr];  //storing the value in the basearray on which the segment-tree will be build 
+  position[curr] = pos++;      //storing the position in which the edge ending on 'curr' is stored in the basearray
+  if(special[curr] != -1)
+    HLD(special[curr]);
+  for(VII::iterator it = adj[curr].begin(); it != adj[curr].end(); it++)
+    if( (!vis[(*it).F]) & ((*it).F != special[curr]) )
+      {
+	ch++;
+	HLD((*it).F);
+      }
+  vis[curr] = false;
+  return;
+}
+ 
+LL query(LL a, LL b)
+{
+  LL L = LCA(a, b);
+  LL temp = a, ans = 0;
+  while(chno[temp] != chno[L])
+    {
+      ans += (LL)query_seg(1, n, 1, position[head[chno[temp]]], position[temp]) ;
+      temp = T[head[chno[temp]]];
+    }
+  if( a != L)
+    ans += (LL)query_seg(1, n, 1, position[L]+1, position[temp]) ;
+  temp = b;
+  while(chno[temp] != chno[L] )
+    {
+      ans += (LL)query_seg(1, n, 1, position[head[chno[temp]]], position[temp]);
+      temp = T[head[chno[temp]]];
+    }
+  if( b != L)
+    ans += (LL)query_seg(1, n, 1, position[L]+1, position[temp]);
+  return ans;
+}
+ 
+ 
+//initialise everything 
+void init(LL n)
+{
+  T[1] = -1;
+  L[1] = 0;
+  LL i, j;
+  rep(i, 1, n+1)
+    {
+      head[i] = -1;
+      special[i] = -1;
+      rep(j, 0, 15)
+	P[i][j] = -1;
+      adj[i].clear();
+    }
+  rep(i, 1, 4*n+1)
+    seg[i] = 0;
+  E.clear();
+  return;
+}
+ 
+#define SI(n) scanf("%lld", &n);
+ 
+int main()
+{
+  
+  LL t, i;
+  SI(t);
+ 
+  while(t--)
+    {
+      SI(n);
+      adj.resize(n+1);
+      init(n);
+      LL a, b, w;
+      rep(i, 1, n)
+	{
+	  SI(a);SI(b);SI(w);
+	  adj[a].PB(MP(b, w));
+	  adj[b].PB(MP(a, w));
+	  E[MP(a, b)] = i;
+	  E[MP(b, a)] = i;
+	}
+      
+      ch = 1, pos = 1;
+      dfs(1);
+      process(n);
+      HLD(1);
+      make_seg(1, n, 1);
+      
+      char str[10];
+      
+      while(1)
+	{
+	  scanf("%s", str);;
+	  
+	  if(strcmp(str, "DONE") == 0)
+	    break;
+	  
+	  SI(a);
+	  SI(b);
+	  
+	  if(str[0] == 'D')
+	    printf("%lld\n", (LL)query(a, b));
+	  else
+	    {
+	      LL c;
+	      SI(c);
+	      if( L[a] < L[b])
+		{
+		  int dis = L[a] + L[b] - 2*L[LCA(a, b)];
+		  swap(a, b);
+		  c = dis - (c-1) + 1;
+		}
+	      LL l = LCA(a, b);
+	      if( (c-1) < abs(L[l]-L[a]) )
+		printf("%lld\n", ANCESTOR(a, c-1, l) );
+	      else if ( (c-1) == abs(L[l]-L[a]) )
+		printf("%lld\n", l);
+	      else printf("%lld\n", ANCESTOR(b, c-abs(L[b]-L[l])-1, l) );
+	    }
+	}
+    }
+  
+  return 0;
+}
